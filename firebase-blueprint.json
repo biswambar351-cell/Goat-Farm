@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "Goat": {
+      "title": "Goat",
+      "description": "Individual goat profile and identification in the farm herd.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the farmer who owns this goat." },
+        "tag": { "type": "string", "description": "Unique ear tag or collar identifier." },
+        "name": { "type": "string", "description": "Friendly name of the goat." },
+        "breed": { "type": "string", "description": "Breed of the goat." },
+        "gender": { "type": "string", "description": "Gender: Doe, Buck, or Wether." },
+        "status": { "type": "string", "description": "Current status: Active, Sold, Culled, Deceased, Dry, Lactating, Pregnant." },
+        "birthDate": { "type": "string", "description": "Date of birth (YYYY-MM-DD)." },
+        "weightKg": { "type": "number", "description": "Last recorded weight in kilograms." },
+        "hornStatus": { "type": "string", "description": "Horn state: Polled, Dehorned, Horned." },
+        "sireTag": { "type": "string", "description": "Father goat tag." },
+        "damTag": { "type": "string", "description": "Mother goat tag." },
+        "notes": { "type": "string", "description": "General care, markings, or pedigree notes." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": ["userId", "tag", "name", "breed", "gender", "status", "createdAt"]
+    },
+    "BreedingRecord": {
+      "title": "BreedingRecord",
+      "description": "Mating, gestation, and kidding tracker for does.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the farmer." },
+        "doeTag": { "type": "string", "description": "Tag or identifier of the doe." },
+        "buckTag": { "type": "string", "description": "Tag or identifier of the buck used." },
+        "breedingDate": { "type": "string", "description": "Date of service (YYYY-MM-DD)." },
+        "expectedKiddingDate": { "type": "string", "description": "Calculated due date (approx 150 days)." },
+        "actualKiddingDate": { "type": "string", "description": "Actual kidding date if completed." },
+        "kidsBorn": { "type": "number", "description": "Number of kids born." },
+        "status": { "type": "string", "description": "Status: Bred, Confirmed Pregnant, Kidded, Failed." },
+        "notes": { "type": "string", "description": "Kidding notes or health observations." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp." }
+      },
+      "required": ["userId", "doeTag", "buckTag", "breedingDate", "expectedKiddingDate", "status", "createdAt"]
+    },
+    "MilkLog": {
+      "title": "MilkLog",
+      "description": "Daily milk yield recording for individual does or herd.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the farmer." },
+        "doeTag": { "type": "string", "description": "Tag of the lactating doe, or 'HERD' for bulk collection." },
+        "date": { "type": "string", "description": "Date of milking (YYYY-MM-DD)." },
+        "session": { "type": "string", "description": "Milking session: Morning, Evening, or Full Day." },
+        "yieldLiters": { "type": "number", "description": "Volume of milk produced in liters." },
+        "notes": { "type": "string", "description": "Milk quality, fat, or mastitis notes." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp." }
+      },
+      "required": ["userId", "doeTag", "date", "session", "yieldLiters", "createdAt"]
+    },
+    "HealthRecord": {
+      "title": "HealthRecord",
+      "description": "Medical treatments, vaccinations, deworming, and preventative care.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the farmer." },
+        "goatTag": { "type": "string", "description": "Tag of the goat or 'ALL' for herd-wide treatment." },
+        "recordType": { "type": "string", "description": "Type: Vaccination, Deworming, Hoof Trimming, Medication, Checkup." },
+        "treatment": { "type": "string", "description": "Name of vaccine, medicine, or procedure." },
+        "dosage": { "type": "string", "description": "Dosage administered (e.g. 2ml subcutaneous)." },
+        "administeredDate": { "type": "string", "description": "Date administered (YYYY-MM-DD)." },
+        "nextDueDate": { "type": "string", "description": "Next booster or follow-up due date." },
+        "cost": { "type": "number", "description": "Cost of medication or vet fee." },
+        "notes": { "type": "string", "description": "FAMACHA score, symptoms, withdrawal times." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp." }
+      },
+      "required": ["userId", "goatTag", "recordType", "treatment", "administeredDate", "createdAt"]
+    },
+    "FarmTransaction": {
+      "title": "FarmTransaction",
+      "description": "Income and expense tracking for farm profitability.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the farmer." },
+        "type": { "type": "string", "description": "Transaction type: Income or Expense." },
+        "category": { "type": "string", "description": "Category: Feed & Hay, Veterinary, Equipment, Livestock Sales, Milk & Dairy, Breeding Fees, Supplies, Other." },
+        "amount": { "type": "number", "description": "Monetary amount." },
+        "date": { "type": "string", "description": "Date of transaction (YYYY-MM-DD)." },
+        "description": { "type": "string", "description": "Description of item, buyer, or supplier." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp." }
+      },
+      "required": ["userId", "type", "category", "amount", "date", "description", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/goats/{goatId}": {
+      "schema": { "$ref": "#/entities/Goat" },
+      "description": "User's herd registry."
+    },
+    "/users/{userId}/breedings/{breedingId}": {
+      "schema": { "$ref": "#/entities/BreedingRecord" },
+      "description": "User's breeding and kidding records."
+    },
+    "/users/{userId}/milk_logs/{milkLogId}": {
+      "schema": { "$ref": "#/entities/MilkLog" },
+      "description": "User's daily milk collection records."
+    },
+    "/users/{userId}/health_records/{recordId}": {
+      "schema": { "$ref": "#/entities/HealthRecord" },
+      "description": "User's herd health and medication logs."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/FarmTransaction" },
+      "description": "User's financial transactions."
+    }
+  }
+}

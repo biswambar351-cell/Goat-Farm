@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidGoat(data) {
+      return data.userId is string &&
+             data.tag is string && data.tag.size() > 0 && data.tag.size() <= 50 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.breed is string && data.breed.size() > 0 && data.breed.size() <= 100 &&
+             data.gender is string && (data.gender == 'Doe' || data.gender == 'Buck' || data.gender == 'Wether') &&
+             data.status is string && data.status.size() > 0 && data.status.size() <= 50 &&
+             (!('birthDate' in data) || (data.birthDate is string && data.birthDate.size() <= 20)) &&
+             (!('weightKg' in data) || (data.weightKg is number && data.weightKg >= 0 && data.weightKg <= 300)) &&
+             (!('hornStatus' in data) || (data.hornStatus is string && data.hornStatus.size() <= 30)) &&
+             (!('sireTag' in data) || (data.sireTag is string && data.sireTag.size() <= 50)) &&
+             (!('damTag' in data) || (data.damTag is string && data.damTag.size() <= 50)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidBreeding(data) {
+      return data.userId is string &&
+             data.doeTag is string && data.doeTag.size() > 0 && data.doeTag.size() <= 50 &&
+             data.buckTag is string && data.buckTag.size() > 0 && data.buckTag.size() <= 50 &&
+             data.breedingDate is string && data.breedingDate.size() <= 20 &&
+             data.expectedKiddingDate is string && data.expectedKiddingDate.size() <= 20 &&
+             data.status is string && (data.status == 'Bred' || data.status == 'Confirmed Pregnant' || data.status == 'Kidded' || data.status == 'Failed') &&
+             (!('actualKiddingDate' in data) || (data.actualKiddingDate is string && data.actualKiddingDate.size() <= 20)) &&
+             (!('kidsBorn' in data) || (data.kidsBorn is number && data.kidsBorn >= 0 && data.kidsBorn <= 10)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidMilkLog(data) {
+      return data.userId is string &&
+             data.doeTag is string && data.doeTag.size() > 0 && data.doeTag.size() <= 50 &&
+             data.date is string && data.date.size() <= 20 &&
+             data.session is string && (data.session == 'Morning' || data.session == 'Evening' || data.session == 'Full Day') &&
+             data.yieldLiters is number && data.yieldLiters >= 0 && data.yieldLiters <= 50 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidHealthRecord(data) {
+      return data.userId is string &&
+             data.goatTag is string && data.goatTag.size() > 0 && data.goatTag.size() <= 50 &&
+             data.recordType is string && data.recordType.size() > 0 && data.recordType.size() <= 50 &&
+             data.treatment is string && data.treatment.size() > 0 && data.treatment.size() <= 200 &&
+             data.administeredDate is string && data.administeredDate.size() <= 20 &&
+             (!('dosage' in data) || (data.dosage is string && data.dosage.size() <= 100)) &&
+             (!('nextDueDate' in data) || (data.nextDueDate is string && data.nextDueDate.size() <= 20)) &&
+             (!('cost' in data) || (data.cost is number && data.cost >= 0 && data.cost <= 100000)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    function isValidTransaction(data) {
+      return data.userId is string &&
+             data.type is string && (data.type == 'Income' || data.type == 'Expense') &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 100 &&
+             data.amount is number && data.amount >= 0 && data.amount <= 10000000 &&
+             data.date is string && data.date.size() <= 20 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 500;
+    }
+
+    // --- User-Scoped Collections ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+
+      // --- Goats Subcollection ---
+      match /goats/{goatId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(goatId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'tag', 'name', 'breed', 'gender', 'status', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'tag', 'name', 'breed', 'gender', 'status', 'birthDate', 'weightKg', 'hornStatus', 'sireTag', 'damTag', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidGoat(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(goatId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidGoat(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['tag', 'name', 'breed', 'gender', 'status', 'birthDate', 'weightKg', 'hornStatus', 'sireTag', 'damTag', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(goatId);
+      }
+
+      // --- Breeding Records Subcollection ---
+      match /breedings/{breedingId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(breedingId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'doeTag', 'buckTag', 'breedingDate', 'expectedKiddingDate', 'status', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'doeTag', 'buckTag', 'breedingDate', 'expectedKiddingDate', 'actualKiddingDate', 'kidsBorn', 'status', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidBreeding(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(breedingId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidBreeding(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['doeTag', 'buckTag', 'breedingDate', 'expectedKiddingDate', 'actualKiddingDate', 'kidsBorn', 'status', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(breedingId);
+      }
+
+      // --- Milk Logs Subcollection ---
+      match /milk_logs/{milkLogId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(milkLogId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'doeTag', 'date', 'session', 'yieldLiters', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'doeTag', 'date', 'session', 'yieldLiters', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidMilkLog(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(milkLogId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidMilkLog(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['doeTag', 'date', 'session', 'yieldLiters', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(milkLogId);
+      }
+
+      // --- Health Records Subcollection ---
+      match /health_records/{recordId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(recordId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'goatTag', 'recordType', 'treatment', 'administeredDate', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'goatTag', 'recordType', 'treatment', 'dosage', 'administeredDate', 'nextDueDate', 'cost', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidHealthRecord(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(recordId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidHealthRecord(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['goatTag', 'recordType', 'treatment', 'dosage', 'administeredDate', 'nextDueDate', 'cost', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(recordId);
+      }
+
+      // --- Financial Transactions Subcollection ---
+      match /transactions/{transactionId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(transactionId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'type', 'category', 'amount', 'date', 'description', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'type', 'category', 'amount', 'date', 'description', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidTransaction(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(transactionId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                         isValidTransaction(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['type', 'category', 'amount', 'date', 'description', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(transactionId);
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Khulana Goat Farm</string>
+    <string name="cd_farm_logo">Farm logo, tap to customize</string>
+    <string name="title_edit_logo">Customize Farm Logo</string>
+    <string name="subtitle_edit_logo">Design a custom farm emblem or pick a photo</string>
+    <string name="action_upload_photo">Pick Photo</string>
+    <string name="action_reset_logo">Default Logo</string>
+    <string name="action_save_logo">Save Logo</string>
+    <string name="action_edit_logo">Edit Logo</string>
+    <string name="error_logo_image_load">Could not load the selected image. Please try another photo.</string>
+    <string name="title_ai_medicine_finder">AI Medicine, Tonic &amp; Supplement Finder</string>
+    <string name="subtitle_ai_medicine_finder">Search best products, upload weight &amp; health info or a photo to check suitability</string>
+    <string name="action_pick_analysis_photo">Upload Goat / Label Photo</string>
+    <string name="error_ai_photo_load">Unable to read the selected photo. Please pick another image.</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Khulana Goat Farm",
+  "description": "Comprehensive goat farm management for herd tracking, breeding cycles, health logs, milk production, and farm finances.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
